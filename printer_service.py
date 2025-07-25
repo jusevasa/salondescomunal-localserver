@@ -55,26 +55,50 @@ class PrinterService:
             printer.set(font='a')
             printer.text("-" * 24 + "\n")
 
-            # Items de la comanda
-            printer.set(align="left", bold=False, double_width=False, double_height=False)
+            # Agrupar items por nombre para consolidar cantidades
+            items_consolidated = {}
             for item in station_group.items:
+                # Crear clave única basada en el item y sus características
+                item_key = f"{item.menu_item_name}"
+                if item.cooking_point:
+                    item_key += f"__{item.cooking_point.name}"
+                if item.sides:
+                    sides_key = "_".join(sorted([side.name for side in item.sides]))
+                    item_key += f"__{sides_key}"
+                if item.notes:
+                    item_key += f"__{item.notes}"
+
+                if item_key not in items_consolidated:
+                    items_consolidated[item_key] = {
+                        "menu_item_name": item.menu_item_name,
+                        "quantity": 0,
+                        "cooking_point": item.cooking_point,
+                        "sides": item.sides,
+                        "notes": item.notes
+                    }
+                
+                items_consolidated[item_key]["quantity"] += item.quantity
+
+            # Items de la comanda consolidados
+            printer.set(align="left", bold=False, double_width=False, double_height=False)
+            for item_data in items_consolidated.values():
                 # Nombre del item y cantidad
                 printer.set(bold=True, double_height=True)
-                printer.text(f"{item.quantity}x {item.menu_item_name}\n")
+                printer.text(f"{item_data['quantity']}x {item_data['menu_item_name']}\n")
 
                 # Punto de cocción si existe
-                if item.cooking_point:
+                if item_data['cooking_point']:
                     printer.set(bold=False, double_height=False)
-                    printer.text(f"   Cocción: {item.cooking_point.name}\n")
+                    printer.text(f"   Cocción: {item_data['cooking_point'].name}\n")
 
                 # Acompañamientos
-                if item.sides:
-                    sides_text = ", ".join([side.name for side in item.sides])
+                if item_data['sides']:
+                    sides_text = ", ".join([side.name for side in item_data['sides']])
                     printer.text(f"   Con: {sides_text}\n")
 
                 # Notas del item
-                if item.notes:
-                    printer.text(f"   Nota: {item.notes}\n")
+                if item_data['notes']:
+                    printer.text(f"   Nota: {item_data['notes']}\n")
 
                 printer.text("\n")
 

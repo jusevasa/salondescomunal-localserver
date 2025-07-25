@@ -73,20 +73,41 @@ async def print_order(request: PrintOrderRequest):
             "total_amount": request.total_amount,
         }
 
-        # Imprimir en cada estación
+        # Agrupar items por estación para evitar duplicados
+        stations_consolidated = {}
         for station_group in request.print_groups:
+            station_key = f"{station_group.print_station.id}_{station_group.print_station.code}"
+            
+            if station_key not in stations_consolidated:
+                stations_consolidated[station_key] = {
+                    "print_station": station_group.print_station,
+                    "items": []
+                }
+            
+            # Agregar items de este grupo a la estación consolidada
+            stations_consolidated[station_key]["items"].extend(station_group.items)
+
+        # Imprimir en cada estación consolidada
+        for station_key, consolidated_group in stations_consolidated.items():
+            # Crear objeto PrintStationGroup consolidado
+            from models import PrintStationGroup
+            consolidated_station_group = PrintStationGroup(
+                print_station=consolidated_group["print_station"],
+                items=consolidated_group["items"]
+            )
+            
             # Verificar conectividad con la impresora
             if not printer_service.test_printer_connection(
-                station_group.print_station.printer_ip
+                consolidated_station_group.print_station.printer_ip
             ):
-                failed_stations.append(station_group.print_station.code)
+                failed_stations.append(consolidated_station_group.print_station.code)
                 continue
 
             # Intentar imprimir
-            if printer_service.print_order_to_station(station_group, order_data):
-                printed_stations.append(station_group.print_station.code)
+            if printer_service.print_order_to_station(consolidated_station_group, order_data):
+                printed_stations.append(consolidated_station_group.print_station.code)
             else:
-                failed_stations.append(station_group.print_station.code)
+                failed_stations.append(consolidated_station_group.print_station.code)
 
         # Generar ID único para la impresión
         print_id = str(uuid.uuid4())
