@@ -1,0 +1,58 @@
+{
+  "order_id": 123,
+  "table_number": "5",
+  "diners_count": 4,
+  "waiter_name": "Juan Pérez",
+  "order_notes": "Cliente alérgico a mariscos",
+  "created_at": "2024-01-15T14:30:00Z",
+  "print_groups": [
+    {
+      "print_station": {
+        "id": 1,
+        "name": "Cocina Caliente",
+        "code": "HOT_KITCHEN",
+        "printer_ip": "192.168.1.100"
+      },
+      "items": [
+        {
+          "menu_item_id": 15,
+          "menu_item_name": "Lomo de Res",
+          "quantity": 2,
+          "unit_price": 45000,
+          "subtotal": 90000,
+          "cooking_point": {
+            "id": 2,
+            "name": "Término Medio"
+          },
+          "notes": "Sin sal",
+          "sides": [
+            { "id": 1, "name": "Papas Fritas" },
+            { "id": 3, "name": "Ensalada Verde" }
+          ]
+        }
+      ]
+    },
+    {
+      "print_station": {
+        "id": 2,
+        "name": "Bar",
+        "code": "BAR",
+        "printer_ip": "192.168.1.101"
+      },
+      "items": [
+        {
+          "menu_item_id": 45,
+          "menu_item_name": "Mojito",
+          "quantity": 3,
+          "unit_price": 15000,
+          "subtotal": 45000,
+          "notes": "Extra menta",
+          "sides": []
+        }
+      ]
+    }
+  ],
+  "subtotal": 135000,
+  "tax_amount": 25650,
+  "total_amount": 160650
+}
