@@ -57,19 +57,6 @@ async def api_health_check():
 async def print_order(request: PrintOrderRequest):
     """Endpoint para imprimir comandas por estación"""
     try:
-        # Log inicial
-        print(f"\n=== NUEVA ORDEN DE IMPRESIÓN ===")
-        print(f"Orden ID: {request.order_id}")
-        print(f"Mesa: {request.table_number}")
-        print(f"Total de grupos a imprimir: {len(request.print_groups)}")
-        
-        # Log de cada grupo
-        for i, group in enumerate(request.print_groups, 1):
-            print(f"Grupo {i}: {group.print_station.name} ({group.print_station.code})")
-            print(f"  - Items en este grupo: {len(group.items)}")
-            for item in group.items:
-                print(f"    * {item.quantity}x {item.menu_item_name}")
-
         printed_stations = []
         failed_stations = []
 
@@ -86,35 +73,23 @@ async def print_order(request: PrintOrderRequest):
             "total_amount": request.total_amount,
         }
 
-        # Imprimir en cada estación (CADA GRUPO POR SEPARADO)
-        for i, station_group in enumerate(request.print_groups, 1):
-            print(f"\n--- Procesando grupo {i}/{len(request.print_groups)} ---")
-            print(f"Estación: {station_group.print_station.name}")
-            print(f"IP: {station_group.print_station.printer_ip}")
-            print(f"Items únicos para esta estación: {len(station_group.items)}")
-            
+        # Imprimir en cada estación
+        for station_group in request.print_groups:
             # Verificar conectividad con la impresora
             if not printer_service.test_printer_connection(
                 station_group.print_station.printer_ip
             ):
-                print(f"❌ Fallo de conectividad con {station_group.print_station.name}")
                 failed_stations.append(station_group.print_station.code)
                 continue
 
-            # Intentar imprimir SOLO los items de este grupo específico
+            # Intentar imprimir
             if printer_service.print_order_to_station(station_group, order_data):
-                print(f"✅ Impresión exitosa en {station_group.print_station.name}")
                 printed_stations.append(station_group.print_station.code)
             else:
-                print(f"❌ Fallo de impresión en {station_group.print_station.name}")
                 failed_stations.append(station_group.print_station.code)
 
         # Generar ID único para la impresión
         print_id = str(uuid.uuid4())
-
-        print(f"\n=== RESUMEN DE IMPRESIÓN ===")
-        print(f"Estaciones exitosas: {printed_stations}")
-        print(f"Estaciones fallidas: {failed_stations}")
 
         # Determinar el resultado
         if printed_stations and not failed_stations:
@@ -144,7 +119,6 @@ async def print_order(request: PrintOrderRequest):
             )
 
     except Exception as e:
-        print(f"❌ Error general: {str(e)}")
         raise HTTPException(
             status_code=500,
             detail={

@@ -30,15 +30,17 @@ class PrinterService:
     ) -> bool:
         """Imprime una comanda en una estación específica"""
         try:
-
             printer = Network(station_group.print_station.printer_ip)
 
+            # Configurar codificación para caracteres especiales
             printer.charcode("CP858")
 
+            # Encabezado con el nombre de la estación
             printer.set(align="center", bold=True, double_width=True, double_height=True)
             printer.text(f"{station_group.print_station.name}\n")
             printer.text("=" * 24 + "\n")
 
+            # Información de la orden (fuente pequeña)
             printer.set(align="left", bold=False, double_width=False, double_height=False, font='b')
             printer.text(f"Orden: #{order_data['order_id']}\n")
             printer.text(f"Mesa: {order_data['table_number']}\n")
@@ -53,13 +55,12 @@ class PrinterService:
             printer.set(font='a')
             printer.text("-" * 24 + "\n")
 
-            # Items de la comanda (SOLO los de este grupo)
+            # Items de la comanda
             printer.set(align="left", bold=False, double_width=False, double_height=False)
-            item_counter = 1
             for item in station_group.items:
-                # Número de item y nombre con cantidad
+                # Nombre del item y cantidad
                 printer.set(bold=True, double_height=True)
-                printer.text(f"{item_counter}. {item.quantity}x {item.menu_item_name}\n")
+                printer.text(f"{item.quantity}x {item.menu_item_name}\n")
 
                 # Punto de cocción si existe
                 if item.cooking_point:
@@ -76,25 +77,20 @@ class PrinterService:
                     printer.text(f"   Nota: {item.notes}\n")
 
                 printer.text("\n")
-                item_counter += 1
 
-            # Pie de página con información de la estación
-            printer.text("=" * 48 + "\n")
-            printer.set(align="center", bold=False, double_width=False, double_height=False)
-            printer.text(f"Total items: {total_items}\n")
+            printer.text("-" * 40 + "\n")
 
             # Cortar papel
             printer.cut()
             printer.close()
 
-            print(f"Impresión exitosa en {station_group.print_station.name}")
             return True
 
         except EscposError as e:
-            print(f"Error de impresora ESC/POS en {station_group.print_station.name}: {e}")
+            print(f"Error de impresora ESC/POS: {e}")
             return False
         except Exception as e:
-            print(f"Error general al imprimir en {station_group.print_station.name}: {e}")
+            print(f"Error general al imprimir: {e}")
             return False
 
     def print_invoice(self, invoice_data: InvoiceRequest) -> tuple[bool, str]:
