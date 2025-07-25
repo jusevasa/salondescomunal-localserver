@@ -12,15 +12,7 @@
       "unit_price": 45000,
       "subtotal": 90000,
       "tax_rate": 0.19,
-      "tax_amount": 17100,
-      "cooking_point": {
-        "id": 2,
-        "name": "Término Medio"
-      },
-      "sides": [
-        { "id": 1, "name": "Papas Fritas" },
-        { "id": 3, "name": "Ensalada Verde" }
-      ]
+      "tax_amount": 17100
     },
     {
       "menu_item_id": 45,
@@ -30,8 +22,7 @@
       "subtotal": 45000,
       "tax_rate": 0.19,
       "tax_amount": 8550,
-      "notes": "Extra menta",
-      "sides": []
+      "notes": "Extra menta"
     }
   ],
   "subtotal": 135000,

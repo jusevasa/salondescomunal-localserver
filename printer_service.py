@@ -1,10 +1,9 @@
 import socket
+from click.core import F
 from escpos.printer import Network
 from escpos.exceptions import Error as EscposError
-from models import PrintStationGroup, OrderItemForPrint, InvoiceRequest
+from models import PrintStationGroup, InvoiceRequest
 from datetime import datetime
-import uuid
-
 
 class PrinterService:
     def __init__(self):
@@ -122,7 +121,7 @@ class PrinterService:
         try:
             # Para la factura, usaremos la primera impresora disponible
             # En un entorno real, esto debería ser configurable
-            printer_ip = "192.168.1.100"  # IP por defecto
+            printer_ip = "192.168.1.79"  # IP por defecto
 
             if not self.test_printer_connection(printer_ip):
                 return False, "No se pudo conectar con la impresora de facturación"
@@ -132,36 +131,33 @@ class PrinterService:
 
             # Encabezado de factura
             printer.set(align="center", bold=True, double_width=True, double_height=True)
-            printer.text("FACTURA\n")
-            printer.text("=" * 32 + "\n")
+            printer.text(f"{invoice_data.restaurant_info.name}\n")
+            printer.text("=" * 24 + "\n")
 
             # Información del restaurante
             if invoice_data.restaurant_info:
-                printer.set(align="center", bold=False, double_width=False, double_height=False)
-                printer.text(f"{invoice_data.restaurant_info.name}\n")
+                printer.set(align="center", bold=False, double_width=False, double_height=False, font='b')
                 printer.text(f"{invoice_data.restaurant_info.address}\n")
                 printer.text(f"Tel: {invoice_data.restaurant_info.phone}\n")
                 printer.text(f"NIT: {invoice_data.restaurant_info.tax_id}\n")
-                printer.text("-" * 32 + "\n")
+                printer.text("-" * 24 + "\n")
+
 
             # Información de la orden
+            printer.set(align="left", bold=False, double_width=False, double_height=False,font='b')
             invoice_number = (
                 f"FAC-{invoice_data.order_id}-{datetime.now().strftime('%Y%m%d%H%M')}"
             )
-            printer.set(align="left", bold=False, double_width=False, double_height=False)
             printer.text(f"Factura: {invoice_number}\n")
             printer.text(f"Orden: #{invoice_data.order_id}\n")
             printer.text(f"Mesa: {invoice_data.table_number}\n")
             printer.text(f"Comensales: {invoice_data.diners_count}\n")
             printer.text(f"Mesero: {invoice_data.waiter_name}\n")
             printer.text(f"Fecha: {datetime.now().strftime('%d/%m/%Y %H:%M')}\n")
-            printer.text("-" * 32 + "\n")
+            printer.text("-" * 24 + "\n")
 
             # Items facturados
-            printer.set(align="left", bold=True, double_width=False, double_height=False)
-            printer.text("DETALLE\n")
-            printer.set(bold=False)
-
+            printer.set(align="left", bold=False, double_width=False, double_height=False, font='b')
             for item in invoice_data.items:
                 printer.text(f"{item.quantity}x {item.menu_item_name}\n")
                 printer.text(f"   ${item.unit_price:,.0f} c/u\n")
@@ -174,43 +170,42 @@ class PrinterService:
             printer.text("-" * 32 + "\n")
 
             # Totales
-            printer.set(align="right", bold=False, double_width=False, double_height=False)
+            printer.set(align="right", bold=False, double_width=False, double_height=False,font='b')
             printer.text(f"Subtotal: {self.format_currency(invoice_data.subtotal)}\n")
             printer.text(
-                f"Impoconsumo (8%): {self.format_currency(invoice_data.tax_amount)}\n"
+                f"INC: {self.format_currency(invoice_data.tax_amount)}\n"
             )
             printer.text(f"Propina: {self.format_currency(invoice_data.tip_amount)}\n")
-            printer.set(bold=True, double_height=True)
-            printer.text(f"TOTAL: {self.format_currency(invoice_data.grand_total)}\n")
+            printer.text(f"Total a pagar: {self.format_currency(invoice_data.grand_total)}\n")
 
-            # Información de pago
-            printer.text("-" * 32 + "\n")
-            printer.set(align="left", bold=True, double_width=False, double_height=False)
-            printer.text("PAGO\n")
-            printer.set(bold=False)
+            # # Información de pago
+            # printer.text("-" * 32 + "\n")
+            # printer.set(align="left", bold=True, double_width=False, double_height=False)
+            # printer.text("PAGO\n")
+            # printer.set(bold=False)
 
-            # Usar el nombre del método enviado desde el frontend o el método como fallback
-            payment_method_display = (
-                invoice_data.payment.payment_method_name or invoice_data.payment.method
-            )
-            printer.text(f"Método: {payment_method_display}\n")
+            # # Usar el nombre del método enviado desde el frontend o el método como fallback
+            # payment_method_display = (
+            #     invoice_data.payment.payment_method_name or invoice_data.payment.method
+            # )
+            # printer.text(f"Método: {payment_method_display}\n")
 
-            if invoice_data.payment.cash_amount:
-                printer.text(
-                    f"Efectivo: {self.format_currency(invoice_data.payment.cash_amount)}\n"
-                )
-            if invoice_data.payment.card_amount:
-                printer.text(
-                    f"Tarjeta: {self.format_currency(invoice_data.payment.card_amount)}\n"
-                )
-            if invoice_data.payment.transfer_amount:
-                printer.text(
-                    f"Transferencia: {self.format_currency(invoice_data.payment.transfer_amount)}\n"
-                )
-            if invoice_data.payment.change_amount > 0:
-                printer.text(
-                    f"Cambio: {self.format_currency(invoice_data.payment.change_amount)}\n"
-                )
+            # if invoice_data.payment.cash_amount:
+            #     printer.text(
+            #         f"Efectivo: {self.format_currency(invoice_data.payment.cash_amount)}\n"
+            #     )
+            # if invoice_data.payment.card_amount:
+            #     printer.text(
+            #         f"Tarjeta: {self.format_currency(invoice_data.payment.card_amount)}\n"
+            #     )
+            # if invoice_data.payment.transfer_amount:
+            #     printer.text(
+            #         f"Transferencia: {self.format_currency(invoice_data.payment.transfer_amount)}\n"
+            #     )
+            # if invoice_data.payment.change_amount > 0:
+            #     printer.text(
+            #         f"Cambio: {self.format_currency(invoice_data.payment.change_amount)}\n"
+            #     )
 
             # Pie de página
             printer.text("\n")
