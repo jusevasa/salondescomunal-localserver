@@ -121,7 +121,7 @@ class PrinterService:
         try:
             # Para la factura, usaremos la primera impresora disponible
             # En un entorno real, esto debería ser configurable
-            printer_ip = "192.168.1.79"  # IP por defecto
+            printer_ip = "192.168.80.200"  # IP por defecto
 
             if not self.test_printer_connection(printer_ip):
                 return False, "No se pudo conectar con la impresora de facturación"
