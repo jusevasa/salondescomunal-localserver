@@ -5,6 +5,7 @@ from escpos.exceptions import Error as EscposError
 from models import PrintStationGroup, InvoiceRequest
 from datetime import datetime
 
+
 class PrinterService:
     def __init__(self):
         self.encoding = "cp858"  # Codificación que soporta caracteres especiales
@@ -35,12 +36,20 @@ class PrinterService:
             printer.charcode("CP858")
 
             # Encabezado con el nombre de la estación
-            printer.set(align="center", bold=True, double_width=True, double_height=True)
+            printer.set(
+                align="center", bold=True, double_width=True, double_height=True
+            )
             printer.text(f"{station_group.print_station.name}\n")
             printer.text("=" * 24 + "\n")
 
             # Información de la orden (fuente pequeña)
-            printer.set(align="left", bold=False, double_width=False, double_height=False, font='b')
+            printer.set(
+                align="left",
+                bold=False,
+                double_width=False,
+                double_height=False,
+                font="b",
+            )
             printer.text(f"Orden: #{order_data['order_id']}\n")
             printer.text(f"Mesa: {order_data['table_number']}\n")
             printer.text(f"Numero de personas: {order_data['diners_count']}\n")
@@ -51,7 +60,7 @@ class PrinterService:
                 printer.text(f"Notas: {order_data['order_notes']}\n")
 
             # Resetear fuente a normal
-            printer.set(font='a')
+            printer.set(font="a")
             printer.text("-" * 24 + "\n")
 
             # Agrupar items por nombre para consolidar cantidades
@@ -73,30 +82,34 @@ class PrinterService:
                         "quantity": 0,
                         "cooking_point": item.cooking_point,
                         "sides": item.sides,
-                        "notes": item.notes
+                        "notes": item.notes,
                     }
-                
+
                 items_consolidated[item_key]["quantity"] += item.quantity
 
             # Items de la comanda consolidados
-            printer.set(align="left", bold=False, double_width=False, double_height=False)
+            printer.set(
+                align="left", bold=False, double_width=False, double_height=False
+            )
             for item_data in items_consolidated.values():
                 # Nombre del item y cantidad
                 printer.set(bold=True, double_height=True)
-                printer.text(f"{item_data['quantity']}x {item_data['menu_item_name']}\n")
+                printer.text(
+                    f"{item_data['quantity']}x {item_data['menu_item_name']}\n"
+                )
 
                 # Punto de cocción si existe
-                if item_data['cooking_point']:
+                if item_data["cooking_point"]:
                     printer.set(bold=False, double_height=False)
                     printer.text(f"   Cocción: {item_data['cooking_point'].name}\n")
 
                 # Acompañamientos
-                if item_data['sides']:
-                    sides_text = ", ".join([side.name for side in item_data['sides']])
+                if item_data["sides"]:
+                    sides_text = ", ".join([side.name for side in item_data["sides"]])
                     printer.text(f"   Con: {sides_text}\n")
 
                 # Notas del item
-                if item_data['notes']:
+                if item_data["notes"]:
                     printer.text(f"   Nota: {item_data['notes']}\n")
 
                 printer.text("\n")
@@ -129,22 +142,42 @@ class PrinterService:
             printer = Network(printer_ip)
             printer.charcode("CP858")
 
-            # Encabezado de factura
-            printer.set(align="center", bold=True, double_width=True, double_height=True)
-            printer.text(f"{invoice_data.restaurant_info.name}\n")
-            printer.text("=" * 24 + "\n")
+            # Configurar fuente pequeña y compacta
+            printer._raw(b"\x1b\x21\x00")  # Reset font settings
 
-            # Información del restaurante
+            # Encabezado de factura - compacto
+            printer.set(
+                align="center",
+                bold=True,
+                double_width=False,
+                double_height=False,
+                font="a",
+            )
+            printer.text(f"{invoice_data.restaurant_info.name}\n")
+            printer.text("=" * 42 + "\n")
+
+            # Información del restaurante - fuente pequeña
             if invoice_data.restaurant_info:
-                printer.set(align="center", bold=False, double_width=False, double_height=False, font='b')
+                printer.set(
+                    align="center",
+                    bold=False,
+                    double_width=False,
+                    double_height=False,
+                    font="a",
+                )
                 printer.text(f"{invoice_data.restaurant_info.address}\n")
                 printer.text(f"Tel: {invoice_data.restaurant_info.phone}\n")
-                printer.text(f"NIT: {invoice_data.restaurant_info.tax_id}\n")
-                printer.text("-" * 24 + "\n")
+                printer.text(f"{invoice_data.restaurant_info.tax_id}\n")
+                printer.text("-" * 42 + "\n")
 
-
-            # Información de la orden
-            printer.set(align="left", bold=False, double_width=False, double_height=False,font='b')
+            # Información de la orden - fuente pequeña
+            printer.set(
+                align="left",
+                bold=False,
+                double_width=False,
+                double_height=False,
+                font="a",
+            )
             invoice_number = (
                 f"FAC-{invoice_data.order_id}-{datetime.now().strftime('%Y%m%d%H%M')}"
             )
@@ -154,65 +187,59 @@ class PrinterService:
             printer.text(f"Comensales: {invoice_data.diners_count}\n")
             printer.text(f"Mesero: {invoice_data.waiter_name}\n")
             printer.text(f"Fecha: {datetime.now().strftime('%d/%m/%Y %H:%M')}\n")
-            printer.text("-" * 24 + "\n")
+            printer.text("-" * 42 + "\n")
 
-            # Items facturados
-            printer.set(align="left", bold=False, double_width=False, double_height=False, font='b')
+            # Items facturados - formato compacto
+            printer.set(
+                align="left",
+                bold=False,
+                double_width=False,
+                double_height=False,
+                font="a",
+            )
             for item in invoice_data.items:
                 printer.text(f"{item.quantity}x {item.menu_item_name}\n")
-                printer.text(f"   ${item.unit_price:,.0f} c/u\n")
 
-                printer.set(align="right")
-                printer.text(f"${item.subtotal:,.0f}\n")
-                printer.set(align="left")
-                printer.text("\n")
+                # Precio unitario y total en línea compacta
+                price_text = f"  ${item.unit_price:,.0f} c/u"
+                total_text = f"${item.subtotal:,.0f}"
+                spaces_needed = 42 - len(price_text) - len(total_text)
+                printer.text(
+                    f"{price_text}" + " " * max(1, spaces_needed) + f"{total_text}\n"
+                )
 
-            printer.text("-" * 32 + "\n")
+            printer.text("-" * 42 + "\n")
 
-            # Totales
-            printer.set(align="right", bold=False, double_width=False, double_height=False,font='b')
-            printer.text(f"Subtotal: {self.format_currency(invoice_data.subtotal)}\n")
-            printer.text(
-                f"INC: {self.format_currency(invoice_data.tax_amount)}\n"
+            # Totales - fuente pequeña
+            printer.set(
+                align="right",
+                bold=False,
+                double_width=False,
+                double_height=False,
+                font="a",
             )
+            printer.text(f"Subtotal: {self.format_currency(invoice_data.subtotal)}\n")
+            printer.text(f"INC: {self.format_currency(invoice_data.tax_amount)}\n")
             printer.text(f"Propina: {self.format_currency(invoice_data.tip_amount)}\n")
-            printer.text(f"Total a pagar: {self.format_currency(invoice_data.grand_total)}\n")
 
-            # # Información de pago
-            # printer.text("-" * 32 + "\n")
-            # printer.set(align="left", bold=True, double_width=False, double_height=False)
-            # printer.text("PAGO\n")
-            # printer.set(bold=False)
+            # Total final solo en negrita
+            printer.set(bold=True, font="a")
+            printer.text(
+                f"Total a pagar: {self.format_currency(invoice_data.grand_total)}\n"
+            )
 
-            # # Usar el nombre del método enviado desde el frontend o el método como fallback
-            # payment_method_display = (
-            #     invoice_data.payment.payment_method_name or invoice_data.payment.method
-            # )
-            # printer.text(f"Método: {payment_method_display}\n")
-
-            # if invoice_data.payment.cash_amount:
-            #     printer.text(
-            #         f"Efectivo: {self.format_currency(invoice_data.payment.cash_amount)}\n"
-            #     )
-            # if invoice_data.payment.card_amount:
-            #     printer.text(
-            #         f"Tarjeta: {self.format_currency(invoice_data.payment.card_amount)}\n"
-            #     )
-            # if invoice_data.payment.transfer_amount:
-            #     printer.text(
-            #         f"Transferencia: {self.format_currency(invoice_data.payment.transfer_amount)}\n"
-            #     )
-            # if invoice_data.payment.change_amount > 0:
-            #     printer.text(
-            #         f"Cambio: {self.format_currency(invoice_data.payment.change_amount)}\n"
-            #     )
-
-            # Pie de página
+            # Pie de página - fuente pequeña
             printer.text("\n")
-            printer.set(align="center", bold=False, double_width=False, double_height=False)
+            printer.set(
+                align="center",
+                bold=False,
+                double_width=False,
+                double_height=False,
+                font="a",
+            )
             printer.text("¡Gracias por su visita!\n")
             printer.text("Vuelva pronto\n")
-            printer.text("=" * 32 + "\n")
+            printer.text("=" * 42 + "\n")
 
             # Cortar papel
             printer.cut()
