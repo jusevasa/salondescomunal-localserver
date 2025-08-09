@@ -4,6 +4,7 @@ from escpos.printer import Network
 from escpos.exceptions import Error as EscposError
 from models import PrintStationGroup, InvoiceRequest
 from datetime import datetime
+from zoneinfo import ZoneInfo
 
 
 class PrinterService:
@@ -54,7 +55,7 @@ class PrinterService:
             printer.text(f"Mesa: {order_data['table_number']}\n")
             printer.text(f"Numero de personas: {order_data['diners_count']}\n")
             printer.text(f"Mesero: {order_data['waiter_name']}\n")
-            printer.text(f"{datetime.now().strftime('%d/%m/%Y %H:%M')}\n")
+            printer.text(f"{datetime.now(ZoneInfo('America/Bogota')).strftime('%d/%m/%Y %I:%M %p').lower()}\n")
 
             if order_data.get("order_notes"):
                 printer.text(f"Notas: {order_data['order_notes']}\n")
@@ -179,14 +180,14 @@ class PrinterService:
                 font="a",
             )
             invoice_number = (
-                f"FAC-{invoice_data.order_id}-{datetime.now().strftime('%Y%m%d%H%M')}"
+                f"FAC-{invoice_data.order_id}-{datetime.now(ZoneInfo('America/Bogota')).strftime('%Y%m%d%H%M')}"
             )
             printer.text(f"Factura: {invoice_number}\n")
             printer.text(f"Orden: #{invoice_data.order_id}\n")
             printer.text(f"Mesa: {invoice_data.table_number}\n")
             printer.text(f"Comensales: {invoice_data.diners_count}\n")
             printer.text(f"Mesero: {invoice_data.waiter_name}\n")
-            printer.text(f"Fecha: {datetime.now().strftime('%d/%m/%Y %H:%M')}\n")
+            printer.text(f"Fecha: {datetime.now(ZoneInfo('America/Bogota')).strftime('%d/%m/%Y %I:%M %p').lower()}\n")
             printer.text("-" * 42 + "\n")
 
             # Items facturados - formato compacto

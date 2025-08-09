@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from datetime import datetime
+from zoneinfo import ZoneInfo
 import uuid
 from models import (
     PrintOrderRequest,
@@ -8,7 +9,6 @@ from models import (
     InvoiceRequest,
     InvoiceResponse,
     ConnectivityResponse,
-    ApiError,
 )
 from printer_service import PrinterService
 
@@ -37,7 +37,7 @@ async def health_check():
     return ConnectivityResponse(
         success=True,
         message="Servidor de impresión funcionando correctamente",
-        timestamp=datetime.now().isoformat(),
+        timestamp=datetime.now(ZoneInfo('America/Bogota')).isoformat(),
         server_status="online",
     )
 
@@ -48,7 +48,7 @@ async def api_health_check():
     return ConnectivityResponse(
         success=True,
         message="API de impresión disponible",
-        timestamp=datetime.now().isoformat(),
+        timestamp=datetime.now(ZoneInfo('America/Bogota')).isoformat(),
         server_status="ready",
     )
 
@@ -204,7 +204,7 @@ async def test_printer_connectivity(printer_ip: str):
             "message": "Impresora conectada"
             if is_connected
             else "Impresora no disponible",
-            "timestamp": datetime.now().isoformat(),
+            "timestamp": datetime.now(ZoneInfo('America/Bogota')).isoformat(),
         }
 
     except Exception as e:
