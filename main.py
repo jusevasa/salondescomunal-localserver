@@ -181,6 +181,7 @@ async def create_invoice(request: InvoiceRequest):
             )
 
     except Exception as e:
+        print(f"Error en create_invoice: {str(e)}")
         raise HTTPException(
             status_code=500,
             detail={

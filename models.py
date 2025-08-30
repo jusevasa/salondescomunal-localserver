@@ -115,7 +115,7 @@ class InvoiceRequest(BaseModel):
     grand_total: float
     payment: PaymentInfo
     restaurant_info: Optional[RestaurantInfo] = None
-    printer_ip: Optional[str] = None
+    print_station: Optional[str] = None
 
 
 class InvoiceResponse(BaseModel):

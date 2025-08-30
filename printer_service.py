@@ -158,8 +158,7 @@ class PrinterService:
         """Imprime una factura"""
         try:
             # Usar la IP proporcionada en el request o la IP por defecto
-            printer_ip = invoice_data.printer_ip or "192.168.80.30"
-
+            printer_ip = invoice_data.print_station or "192.168.80.36"
             if not self.test_printer_connection(printer_ip):
                 return False, "No se pudo conectar con la impresora de facturación"
 
