@@ -12,13 +12,35 @@ class PrinterService:
         self.encoding = "cp858"  # Codificación que soporta caracteres especiales
 
     def test_printer_connection(self, printer_ip: str) -> bool:
-        """Prueba la conectividad con una impresora"""
+        """Prueba la conectividad con una impresora de forma robusta"""
         try:
+            # Primero verificar conectividad básica de red
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            sock.settimeout(3)
+            sock.settimeout(5)  # Aumentar timeout
             result = sock.connect_ex((printer_ip, 9100))
             sock.close()
-            return result == 0
+
+            if result != 0:
+                return False
+
+            # Intentar crear una conexión real con la impresora
+            printer = Network(printer_ip)
+
+            # Enviar comando de estado para verificar que la impresora responde
+            printer._raw(b"\x10\x04\x01")  # Comando DLE EOT para obtener estado
+
+            # Si llegamos aquí, la impresora está realmente conectada
+            printer.close()
+            return True
+
+        except (
+            EscposError,
+            socket.error,
+            socket.timeout,
+            ConnectionRefusedError,
+            OSError,
+        ) as e:
+            return False
         except Exception:
             return False
 
@@ -55,7 +77,9 @@ class PrinterService:
             printer.text(f"Mesa: {order_data['table_number']}\n")
             printer.text(f"Numero de personas: {order_data['diners_count']}\n")
             printer.text(f"Mesero: {order_data['waiter_name']}\n")
-            printer.text(f"{datetime.now(ZoneInfo('America/Bogota')).strftime('%d/%m/%Y %I:%M %p').lower()}\n")
+            printer.text(
+                f"{datetime.now(ZoneInfo('America/Bogota')).strftime('%d/%m/%Y %I:%M %p').lower()}\n"
+            )
 
             if order_data.get("order_notes"):
                 printer.text(f"Notas: {order_data['order_notes']}\n")
@@ -179,15 +203,15 @@ class PrinterService:
                 double_height=False,
                 font="a",
             )
-            invoice_number = (
-                f"FAC-{invoice_data.order_id}-{datetime.now(ZoneInfo('America/Bogota')).strftime('%Y%m%d%H%M')}"
-            )
+            invoice_number = f"FAC-{invoice_data.order_id}-{datetime.now(ZoneInfo('America/Bogota')).strftime('%Y%m%d%H%M')}"
             printer.text(f"Factura: {invoice_number}\n")
             printer.text(f"Orden: #{invoice_data.order_id}\n")
             printer.text(f"Mesa: {invoice_data.table_number}\n")
             printer.text(f"Comensales: {invoice_data.diners_count}\n")
             printer.text(f"Mesero: {invoice_data.waiter_name}\n")
-            printer.text(f"Fecha: {datetime.now(ZoneInfo('America/Bogota')).strftime('%d/%m/%Y %I:%M %p').lower()}\n")
+            printer.text(
+                f"Fecha: {datetime.now(ZoneInfo('America/Bogota')).strftime('%d/%m/%Y %I:%M %p').lower()}\n"
+            )
             printer.text("-" * 42 + "\n")
 
             # Items facturados - formato compacto

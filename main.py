@@ -37,7 +37,7 @@ async def health_check():
     return ConnectivityResponse(
         success=True,
         message="Servidor de impresión funcionando correctamente",
-        timestamp=datetime.now(ZoneInfo('America/Bogota')).isoformat(),
+        timestamp=datetime.now(ZoneInfo("America/Bogota")).isoformat(),
         server_status="online",
     )
 
@@ -48,7 +48,7 @@ async def api_health_check():
     return ConnectivityResponse(
         success=True,
         message="API de impresión disponible",
-        timestamp=datetime.now(ZoneInfo('America/Bogota')).isoformat(),
+        timestamp=datetime.now(ZoneInfo("America/Bogota")).isoformat(),
         server_status="ready",
     )
 
@@ -197,23 +197,40 @@ async def test_printer_connectivity(printer_ip: str):
     try:
         is_connected = printer_service.test_printer_connection(printer_ip)
 
-        return {
-            "success": True,
+        status_code = 200 if is_connected else 503
+
+        response_data = {
+            "success": is_connected,
             "printer_ip": printer_ip,
             "connected": is_connected,
-            "message": "Impresora conectada"
+            "message": "Impresora conectada y respondiendo correctamente"
             if is_connected
-            else "Impresora no disponible",
-            "timestamp": datetime.now(ZoneInfo('America/Bogota')).isoformat(),
+            else "Impresora no disponible o no responde",
+            "timestamp": datetime.now(ZoneInfo("America/Bogota")).isoformat(),
+            "test_details": {
+                "network_reachable": True if is_connected else "Unknown",
+                "printer_responding": is_connected,
+                "port": 9100,
+            },
         }
 
+        if not is_connected:
+            raise HTTPException(status_code=status_code, detail=response_data)
+
+        return response_data
+
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(
             status_code=500,
             detail={
                 "success": False,
+                "printer_ip": printer_ip,
+                "connected": False,
                 "error": f"Error al probar conectividad: {str(e)}",
                 "code": "CONNECTIVITY_TEST_FAILED",
+                "timestamp": datetime.now(ZoneInfo("America/Bogota")).isoformat(),
             },
         )
 
